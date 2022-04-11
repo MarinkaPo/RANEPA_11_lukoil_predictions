@@ -1,10 +1,11 @@
 import streamlit as st
 import pandas as pd #Пандас
 import matplotlib
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt #Отрисовка графиков
 from tensorflow.keras import utils #Для to_categorical
 import numpy as np #Numpy
+from tensorflow import keras
 from tensorflow.keras.optimizers import Adam #Оптимизатор
 from tensorflow.keras.models import Sequential, Model #Два варианты моделей
 from tensorflow.keras.layers import concatenate, Input, Dense, Dropout, BatchNormalization, Flatten, Conv1D, Conv2D, LSTM #Стандартные слои
@@ -31,19 +32,17 @@ expander_bar.markdown(
     """
 **Временной ряд** — это упорядоченная последовательность значений какого-либо показателя за несколько периодов времени. 
 Основная характеристика, которая отличает временной ряд от простой выборки данных, — указанное время измерения или номер изменения по порядку.
-**Временные ряды** используются для аналитики и прогнозирования, когда важно определить, что будет происходить с показателями в ближайший час/день/месяц/год: 
+\n**Временные ряды** используются для аналитики и прогнозирования, когда важно определить, что будет происходить с показателями в ближайший час/день/месяц/год: 
 например, сколько пользователей скачают за день мобильное приложение. Показатели для составления временных рядов могут быть не только техническими, 
 но и экономическими, социальными и даже природными. 
-
-**Используемые библиотеки:** tensorflow (keras), sklearn, streamlit, pandas, matplotlib, numpy.
-
-**Полезно почитать:** [Общее](http://www.machinelearning.ru/wiki/index.php?title=%D0%92%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9_%D1%80%D1%8F%D0%B4), 
+\n**Используемые библиотеки:** tensorflow (keras), sklearn, streamlit, pandas, matplotlib, numpy.
+\n**Полезно почитать:** [Общее](http://www.machinelearning.ru/wiki/index.php?title=%D0%92%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9_%D1%80%D1%8F%D0%B4), 
 [Хабр](https://habr.com/ru/post/553658/).
 
 """
 )
-
-st.sidebar.header('Выбор действия:')
+#-------------------------Боковая панель-------------------------
+st.sidebar.header('Загрузить датафрейм - для варианта 1:')
 
 # df = pd.read_csv("concat_data.csv")
 # @st.cache
@@ -65,10 +64,11 @@ st.sidebar.header('Выбор действия:')
 # """)
 
 # -------------------------Собираем датафрейм-------------------------
-uploaded_file = st.sidebar.file_uploader("Загрузить CSV-файл", type=["csv"])
+uploaded_file = st.sidebar.file_uploader("Выбрать CSV-файл", type=["csv"])
 if uploaded_file is not None:
     input_df = pd.read_csv(uploaded_file, index_col=0)
 else:
+    st.sidebar.header('Установить фичи самостоятельно - для варианта 2:')
     def user_input_features():
         open_price = st.sidebar.slider('Цена открытия', 2041.0,5995.5,3000.9)
         max_price = st.sidebar.slider('Максимальная цена', 2046.9,5996.0,3300.9)
@@ -95,18 +95,30 @@ else:
 
 data = input_df
 # -------------------------Смотрим датафрейм-------------------------
-if st.button('Посмотрим загруженный dataframe:'):
+st.header('Блок 1: работа с данными')
+
+flag_df = False
+if st.button('Посмотрим полученный dataframe'):
+    flag_df = True
+else:
+    pass
+
+if flag_df == True:   
     st.dataframe(data.head(10)) 
-    # st.write(input_df.head(10))
-    st.write("Весь размер таблицы:", data.shape[0], "строк, ", data.shape[1], "столбцов." )
+    # st.write(sinput_df.head(10))
+    st.write("Весь размер таблицы: строк:", data.shape[0], "столбцов: ", data.shape[1])
 
 data = np.array(input_df)
 
-#-------------------------Визуализируем!!!-------------------------
+#-------------------------Визуализируем данные на графиках-------------------------
 # vizualize = st.button('Визуализируем данные на графиках')
+flag_viz = False
 if st.button('Визуализируем данные на графиках'):
+    flag_viz = True
+else:
+    pass
     # data = input_df
-    
+if flag_viz == True:     
     #Отображаем исходные от точки start и длинной step
     start = 0            #С какой точки начинаем
     step = data.shape[0] #Сколько точек отрисуем
@@ -154,20 +166,23 @@ if st.button('Визуализируем данные на графиках'):
     st.pyplot(fig2)
 
 #-------------------------Создаём генератор данных!!!-------------------------
-if data.shape[0] == 0:
+# if data.shape[0] == 0:
+#     pass
+# else:
+xLen = 300                      #Анализируем по 300 прошедшим точкам 
+valLen = 30000                  #Используем 30.000 записей для проверки
+#Формируем параметры загрузки данных
+
+trainLen = data.shape[0]-valLen # Размер тренировочной выборки
+
+#Делим данные на тренировочную и тестовую выборки 
+xTrain,xTest = data[:trainLen], data[trainLen+xLen+2:]
+
+#Масштабируем данные (отдельно для X и Y), чтобы их легче было скормить сетке
+xScaler = MinMaxScaler()
+if xTrain.shape[0]==0:
     pass
-else:
-    xLen = 300                      #Анализируем по 300 прошедшим точкам 
-    valLen = 30000                  #Используем 30.000 записей для проверки
-    #Формируем параметры загрузки данных
-
-    trainLen = data.shape[0]-valLen # Размер тренировочной выборки
-
-    #Делим данные на тренировочную и тестовую выборки 
-    xTrain,xTest = data[:trainLen], data[trainLen+xLen+2:]
-
-    #Масштабируем данные (отдельно для X и Y), чтобы их легче было скормить сетке
-    xScaler = MinMaxScaler()
+else: 
     xScaler.fit(xTrain)
     xTrain = xScaler.transform(xTrain)
     xTest = xScaler.transform(xTest)
@@ -203,6 +218,7 @@ else:
     yVal = np.array(yVal)
 
 if st.button('Создаём генератор данных'):
+    st.caption('Сейчас мы: \nразделили данные на тренировочную (Train) и тестовую (Test) выборки, \nотмасштабировали данные с помощью MinMaxScaler(), \nсоздали генератор для Train и для Test')
     st.write(f'''
     Таким образом получились np.array: 
     \n xTrain: 
@@ -215,49 +231,7 @@ if st.button('Создаём генератор данных'):
     \n {yTest} \n размером {yTest.shape}   
         ''')
 
-#-------------------------Создадим полносвязанную нейронную сеть-------------------------
-#Создаём нейронку
-modelD = Sequential()
-modelD.add(Dense(150,input_shape = (xLen,5), activation="linear" )) # 5 - количество каналов
-modelD.add(Flatten())
-modelD.add(Dense(1, activation="linear"))
-#Компилируем
-modelD.compile(loss="mse", optimizer=Adam(lr=1e-4))
-modelD.summary()
-
-if st.button('Создадим полносвязанную нейронную сеть'):
-    st.write('!!! Необходимо вставить сюда modelD.summary() !!!')
-
-    
-#-------------------------Запускаем обучение-------------------------
-epchs = st.selectbox('Выберете количество эпох обучения:', (1,2,5,10,20))
-if st.button('Запускаем обучение'):
-    st.write('!!! Необходимо вставить сюда визуализацию эпох !!!')
-    history = modelD.fit(
-                        trainDataGen, 
-                        epochs=int(epchs), 
-                        verbose=1,
-                        validation_data = testDataGen 
-                        )
-
-    #Выводим графики
-    fig3 = plt.figure(figsize=(22,12), tight_layout=True)
-    plt.plot(history.history['loss'], 
-            label='Средняя абсолютная ошибка на обучающем наборе')
-    plt.plot(history.history['val_loss'], 
-            label='Средняя абсолютная ошибка на проверочном наборе')
-    plt.ylabel('Средняя ошибка')
-    plt.legend()
-    st.pyplot(fig3) 
-
-    #Выводим результаты
-    for i in range(10):
-        y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
-        y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
-        st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
-
-
-#-------------------------Визуализация результатов-------------------------   
+#--------------------Функции для визуализации--------------------
 # Функция рассчитываем результаты прогнозирования сети
 # В аргументы принимает сеть (currModel) и проверочную выборку
 # Выдаёт результаты предсказания predVal
@@ -341,15 +315,90 @@ def showCorr(channels, corrSteps, predVal, yValUnscaled):
   plt.legend()
   st.pyplot(fig5) 
 
+#-------------------------Загрузить уже обученную модель-------------------------
+st.header('Блок 2: загрузить уже обученную модель')
+expander_bar = st.expander("Какую модель загружаем и почему?")
+expander_bar.markdown('''
+В связи с тем, что обучение моделей - долгий процесс, 
+в этом блоке мы будем **не обучать заново**, а **загружать уже обученную модель**. 
+\nДля её обучения был взят исходный датасет и генератора данных из Блока 1.
+\nОбучение длилось 20 эпох.
+\nПолный процесс создания нейросети "с нуля" разобран в Блоке 3.
+'''
+)
+# uploaded_model = st.file_uploader("Выбрать модель для загрузки")
+# посмотреть, что в uploaded_model: UploadedFile(id=4, name='model_20_ep.h5', type='application/octet-stream', size=577928)
+# писать путь, а не загружать?
+# if uploaded_model is not None:
+model_upload = keras.models.load_model('model_20_ep.h5')
 
 
-#-------------------------Прогнозируем данные текущей сетью-------------------------
-if st.button('Прогнозируем данные'):
-    currModel = modelD #Выбираем текущую модель
+#-------------------------Выводим результаты-------------------------
+if st.button('Выводим результаты'):
+    for i in range(10):
+        y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
+        y2 = yScaler.inverse_transform(model_upload.predict(xVal[0][i].reshape(1,300,5)))
+        st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
+
+#-------------------------Прогнозируем данные загруженной сетью-------------------------
+if st.button('Прогноз загруженной моделью'):
+    currModel = model_upload #Выбираем текущую модель
     (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
 
     #Отображаем графики
     showPredict(0, 160, 0, predVal, yValUnscaled)
+
+#-------------------------Создадим полносвязанную нейронную сеть-------------------------
+st.header('Блок 3: создать нейронную сеть "с нуля"')
+
+modelD = Sequential()
+modelD.add(Dense(150,input_shape = (xLen,5), activation="linear" )) # 5 - количество каналов
+modelD.add(Flatten())
+modelD.add(Dense(1, activation="linear"))
+#Компилируем
+modelD.compile(loss="mse", optimizer=Adam(lr=1e-4))
+modelD.summary()
+
+if st.button('Создадим полносвязанную нейронную сеть'):
+    st.write('!!! Необходимо вставить сюда modelD.summary() !!!')
+
+    
+#--------------------Запускаем обучение и визуализацию--------------------
+#--------------------Непосредственно обучение
+epchs = st.selectbox('Выберете количество эпох обучения:', (1,2,5,10,20))
+if st.button('Запускаем обучение и прогноз'):
+    st.write('!!! Необходимо вставить сюда визуализацию эпох !!!')
+    history = modelD.fit(
+                        trainDataGen, 
+                        epochs=int(epchs), 
+                        verbose=1,
+                        validation_data = testDataGen 
+                        )
+
+    #Выводим графики обучения
+    fig3 = plt.figure(figsize=(22,12), tight_layout=True)
+    plt.plot(history.history['loss'], 
+            label='Средняя абсолютная ошибка на обучающем наборе')
+    plt.plot(history.history['val_loss'], 
+            label='Средняя абсолютная ошибка на проверочном наборе')
+    plt.ylabel('Средняя ошибка')
+    plt.legend()
+    st.pyplot(fig3) 
+
+    #--------------------Выводим результаты обученной модели на Val:
+    for i in range(10):
+        y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
+        y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
+        st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
+
+
+    #if st.button('Прогноз обученной моделью'):
+    currModel = modelD #Выбираем текущую модель
+    (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
+    #Отображаем графики
+    showPredict(0, 160, 0, predVal, yValUnscaled)
+
+
 
 # Encoding of ordinal features
 # https://www.kaggle.com/pratik1120/penguin-dataset-eda-classification-and-clustering
