@@ -323,7 +323,7 @@ model_upload = keras.models.load_model('model_20_ep.h5')
 
 
 #-------------------------Выводим результаты-------------------------
-if st.button('Выводим результаты'):
+if st.button('Выводим результаты загруженной модели'):
     for i in range(10):
         y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
         y2 = yScaler.inverse_transform(model_upload.predict(xVal[0][i].reshape(1,300,5)))
