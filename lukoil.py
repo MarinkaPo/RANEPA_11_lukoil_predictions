@@ -1,4 +1,4 @@
-from functools import cache
+# from functools import cache
 import streamlit as st
 import pandas as pd #Пандас
 # import matplotlib
