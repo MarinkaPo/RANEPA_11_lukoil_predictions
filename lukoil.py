@@ -364,7 +364,7 @@ if st.button('Создадим полносвязанную нейронную �
   # компилируем:
   modelD.compile(loss="mse", optimizer=Adam(lr=1e-4))
   ''')
-  tf.keras.utils.plot_model(modelD, to_file='modelD.png', show_shapes=True)
+  # tf.keras.utils.plot_model(modelD, to_file='modelD.png', show_shapes=True)
   st.image('modelD.png', caption='Архитектура нашей нейронной сети', 
           width=None, use_column_width=None, clamp=False, 
           channels="RGB", output_format="auto")
