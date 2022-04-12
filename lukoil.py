@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd #Пандас
-import matplotlib
-# matplotlib.use('TkAgg')
+# import matplotlib
 import matplotlib.pyplot as plt #Отрисовка графиков
 import numpy as np #Numpy
-import pickle
+#import pickle
 from PIL import Image
-from tqdm import tqdm
-import time
+#from tqdm import tqdm
+#import time
 
 import tensorflow as tf
 from tensorflow import keras
@@ -20,6 +19,7 @@ from keras.utils.vis_utils import plot_model
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator # для генерации выборки временных рядов
 # %matplotlib inline # Рисовать графики сразу же
 # from lukoil_functions.py import *
+# matplotlib.use('TkAgg')
 
 st.title('Lukoil stock price prediction')
 img = Image.open('Lukoil.jpg')
@@ -39,9 +39,9 @@ expander_bar.markdown(
 \nРегрессия - относится к классу задач обучения с учителем, когда по заданному набору признаков наблюдаемого объекта необходимо спрогнозировать некоторую целевую переменную.
 Таким образом можно прогнозировать цену недвижимости, капитализацию компании или стоимость акций. 
 \nВ этом приложении вы узнаете, как разрабатывать и оценивать модели нейронных сетей с использованием библиотеки глубокого обучения Keras для решения проблемы регрессии.
-\n**Используемые библиотеки:** tensorflow (keras), sklearn, streamlit, pandas, matplotlib, numpy.
-\n**Полезно почитать:** [Общее](http://www.machinelearning.ru/wiki/index.php?title=%D0%92%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9_%D1%80%D1%8F%D0%B4), 
-[Хабр](https://habr.com/ru/post/553658/).
+\n**Используемые библиотеки:** [tensorflow (keras)](https://keras.io/guides/sequential_model/), [streamlit](https://docs.streamlit.io/library/get-started), [pandas](https://pandas.pydata.org/docs/user_guide/index.html), [matplotlib](https://matplotlib.org/stable/api/index.html), [numpy](https://numpy.org/doc/stable/reference/index.html).
+\n**Полезно почитать:** [Ссылка 1](https://www.machinelearningmastery.ru/regression-tutorial-keras-deep-learning-library-python), 
+[Ссылка 2](https://habr.com/ru/company/vk/blog/513842/), [Ссылка 3](https://www.bizkit.ru/2019/11/05/14921/).
 
 """
 )
@@ -221,7 +221,7 @@ if st.button('Создаём генератор данных'):
     \n {xTest}, \n размером {xTest.shape}
     \n yTest: 
     \n {yTest} \n размером {yTest.shape} 
-    \n **...которые мы будем исползовать для обучения модели (Train) и для проверки качества обучения (Test).**  
+    \n **...которые мы будем использовать для обучения модели (Train) и для проверки качества обучения (Test).**  
         ''')
 
 #--------------------Функции для визуализации--------------------
