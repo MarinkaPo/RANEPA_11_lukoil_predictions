@@ -1,4 +1,3 @@
-# from functools import cache
 import streamlit as st
 import pandas as pd #Пандас
 # import matplotlib
@@ -37,7 +36,7 @@ st.write("""
 expander_bar = st.expander("Перед тем, как начать:")
 expander_bar.markdown(
     """
-\n**Регрессия** - относится к классу задач обучения с учителем, когда по заданному набору признаков наблюдаемого объекта необходимо спрогнозировать некоторую целевую переменную.
+\nРегрессия - относится к классу задач обучения с учителем, когда по заданному набору признаков наблюдаемого объекта необходимо спрогнозировать некоторую целевую переменную.
 Таким образом можно прогнозировать цену недвижимости, капитализацию компании или стоимость акций. 
 \nВ этом приложении вы узнаете, как разрабатывать и оценивать модели нейронных сетей с использованием библиотеки глубокого обучения Keras для решения проблемы регрессии.
 \n**Используемые библиотеки:** [tensorflow (keras)](https://keras.io/guides/sequential_model/), [streamlit](https://docs.streamlit.io/library/get-started), [pandas](https://pandas.pydata.org/docs/user_guide/index.html), [matplotlib](https://matplotlib.org/stable/api/index.html), [numpy](https://numpy.org/doc/stable/reference/index.html).
@@ -324,7 +323,7 @@ model_upload = keras.models.load_model('model_20_ep.h5')
 
 
 #-------------------------Выводим результаты-------------------------
-if st.button('Выводим результаты загруженной модели'):
+if st.button('Выводим результаты'):
     for i in range(10):
         y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
         y2 = yScaler.inverse_transform(model_upload.predict(xVal[0][i].reshape(1,300,5)))
@@ -365,8 +364,7 @@ if st.button('Создадим полносвязанную нейронную �
   # компилируем:
   modelD.compile(loss="mse", optimizer=Adam(lr=1e-4))
   ''')
-  
-  #tf.keras.utils.plot_model(modelD, to_file='modelD.png', show_shapes=True)
+  tf.keras.utils.plot_model(modelD, to_file='modelD.png', show_shapes=True)
   st.image('modelD.png', caption='Архитектура нашей нейронной сети', 
           width=None, use_column_width=None, clamp=False, 
           channels="RGB", output_format="auto")
@@ -380,41 +378,36 @@ if st.button('Создадим полносвязанную нейронную �
 #--------------------Запускаем обучение и визуализацию--------------------
 #--------------------Непосредственно обучение
 epchs = st.selectbox('Выберете количество эпох обучения:', (1,2,5,10,20))
-if st.button('Запускаем обучение и прогноз'):
-    with st.echo():
-      history = modelD.fit(trainDataGen, 
-                          epochs=int(epchs), 
-                          verbose=1,
-                          validation_data = testDataGen)
-    # for epch in tqdm(range(0,epchs)):
-    #   progress_bar = st.progress(0)
-    #   for percent_complete in range(100):
-    # time.sleep(0.1)
-    # progress_bar.progress(percent_complete + 1)
-    # progress_bar.progress(1.0)
-    #Выводим графики обучения
-    fig3 = plt.figure(figsize=(22,12), tight_layout=True)
-    plt.plot(history.history['loss'], 
-            label='Средняя абсолютная ошибка на обучающем наборе')
-    plt.plot(history.history['val_loss'], 
-            label='Средняя абсолютная ошибка на проверочном наборе')
-    plt.ylabel('Средняя ошибка')
-    plt.legend()
-    st.pyplot(fig3) 
+# if st.button('Запускаем обучение и прогноз'):
+#     with st.echo():
+#       history = modelD.fit(trainDataGen, 
+#                           epochs=int(epchs), 
+#                           verbose=1,
+#                           validation_data = testDataGen)
+    
+#     #Выводим графики обучения
+#     fig3 = plt.figure(figsize=(22,12), tight_layout=True)
+#     plt.plot(history.history['loss'], 
+#             label='Средняя абсолютная ошибка на обучающем наборе')
+#     plt.plot(history.history['val_loss'], 
+#             label='Средняя абсолютная ошибка на проверочном наборе')
+#     plt.ylabel('Средняя ошибка')
+#     plt.legend()
+#     st.pyplot(fig3) 
 
 
-    #--------------------Выводим результаты обученной модели на Val:
-    for i in range(10):
-        y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
-        y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
-        st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
+#     #--------------------Выводим результаты обученной модели на Val:
+#     for i in range(10):
+#         y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
+#         y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
+#         st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
 
 
-    #if st.button('Прогноз обученной моделью'):
-    currModel = modelD #Выбираем текущую модель
-    (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
-    #Отображаем графики
-    showPredict(0, 160, 0, predVal, yValUnscaled)
+#     #if st.button('Прогноз обученной моделью'):
+#     currModel = modelD #Выбираем текущую модель
+#     (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
+#     #Отображаем графики
+#     showPredict(0, 160, 0, predVal, yValUnscaled)
 
 
 
