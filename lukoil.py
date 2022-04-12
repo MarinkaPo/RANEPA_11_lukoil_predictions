@@ -3,38 +3,42 @@ import pandas as pd #Пандас
 import matplotlib
 # matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt #Отрисовка графиков
-from tensorflow.keras import utils #Для to_categorical
 import numpy as np #Numpy
+import pickle
+from PIL import Image
+from tqdm import tqdm
+import time
+
+import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import utils #Для to_categorical
 from tensorflow.keras.optimizers import Adam #Оптимизатор
 from tensorflow.keras.models import Sequential, Model #Два варианты моделей
 from tensorflow.keras.layers import concatenate, Input, Dense, Dropout, BatchNormalization, Flatten, Conv1D, Conv2D, LSTM #Стандартные слои
 from sklearn.preprocessing import StandardScaler, MinMaxScaler #Нормировщики
+from keras.utils.vis_utils import plot_model
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator # для генерации выборки временных рядов
 # %matplotlib inline # Рисовать графики сразу же
-import pickle
-from PIL import Image
+# from lukoil_functions.py import *
 
 st.title('Lukoil stock price prediction')
 img = Image.open('Lukoil.jpg')
 st.image(img, use_column_width='auto') #width=400
 
 st.write("""
-Приложение показывает, как работает нейронная сеть с временными рядами.
+Приложение показывает, как работает нейронная сеть для предсказания цен акций.
 
 Предсказвает цену на акции Лукойл, исходя из данных предыдущих периодов.
 
 Данные подготовил Николай Лисин.
 """)
 #-------------------------О проекте-------------------------
-expander_bar = st.expander("Перед тем, как начать - немного теории:")
+expander_bar = st.expander("Перед тем, как начать:")
 expander_bar.markdown(
     """
-**Временной ряд** — это упорядоченная последовательность значений какого-либо показателя за несколько периодов времени. 
-Основная характеристика, которая отличает временной ряд от простой выборки данных, — указанное время измерения или номер изменения по порядку.
-\n**Временные ряды** используются для аналитики и прогнозирования, когда важно определить, что будет происходить с показателями в ближайший час/день/месяц/год: 
-например, сколько пользователей скачают за день мобильное приложение. Показатели для составления временных рядов могут быть не только техническими, 
-но и экономическими, социальными и даже природными. 
+\nРегрессия - относится к классу задач обучения с учителем, когда по заданному набору признаков наблюдаемого объекта необходимо спрогнозировать некоторую целевую переменную.
+Таким образом можно прогнозировать цену недвижимости, капитализацию компании или стоимость акций. 
+\nВ этом приложении вы узнаете, как разрабатывать и оценивать модели нейронных сетей с использованием библиотеки глубокого обучения Keras для решения проблемы регрессии.
 \n**Используемые библиотеки:** tensorflow (keras), sklearn, streamlit, pandas, matplotlib, numpy.
 \n**Полезно почитать:** [Общее](http://www.machinelearning.ru/wiki/index.php?title=%D0%92%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%BD%D0%BE%D0%B9_%D1%80%D1%8F%D0%B4), 
 [Хабр](https://habr.com/ru/post/553658/).
@@ -42,48 +46,28 @@ expander_bar.markdown(
 """
 )
 #-------------------------Боковая панель-------------------------
-st.sidebar.header('Загрузить датафрейм - для варианта 1:')
+# st.sidebar.header('Загрузить датафрейм - для варианта 1:')
 
-# df = pd.read_csv("concat_data.csv")
-# @st.cache
-# def convert_df(df):
-#    return df.to_csv().encode('utf-8')
-# csv = convert_df(df)
+# uploaded_file = st.sidebar.file_uploader("Выбрать CSV-файл", type=["csv"])
+# if uploaded_file is not None:
+#     input_df = pd.read_csv(uploaded_file, index_col=0)
+# else:
+#     st.sidebar.header('Установить фичи самостоятельно - для варианта 2:')
+#     def user_input_features():
+#         open_price = st.sidebar.slider('Цена открытия', 2041.0,5995.5,3000.9)
+#         max_price = st.sidebar.slider('Максимальная цена', 2046.9,5996.0,3300.9)
+#         min_price = st.sidebar.slider('Минимальная цена', 2040.1,5993.0,3400.9)
+#         close_price = st.sidebar.slider('Цена закрытия', 2041.1,5996.0,3450.9)
+#         v_volume = st.sidebar.slider('Объем продаж', 0,4296341,1845000)
 
-# ДЛЯ СОХРАНЕНИЯ!!!
-# st.download_button(label ='Нажмите, чтобы сохранить файл',
-#    data = csv,
-#    file_name='concat_data.csv',
-#    mime='text/csv'
-#    key='download-csv'
-# )
-
-# ДЛЯ ЗАГРУЗКИ С РЕСУРСА!!!
-# st.sidebar.markdown("""
-# [Загрузить данные Лукойла](https://raw.githubusercontent.com/dataprofessor/data/master/penguins_example.csv)
-# """)
-
-# -------------------------Собираем датафрейм-------------------------
-uploaded_file = st.sidebar.file_uploader("Выбрать CSV-файл", type=["csv"])
-if uploaded_file is not None:
-    input_df = pd.read_csv(uploaded_file, index_col=0)
-else:
-    st.sidebar.header('Установить фичи самостоятельно - для варианта 2:')
-    def user_input_features():
-        open_price = st.sidebar.slider('Цена открытия', 2041.0,5995.5,3000.9)
-        max_price = st.sidebar.slider('Максимальная цена', 2046.9,5996.0,3300.9)
-        min_price = st.sidebar.slider('Минимальная цена', 2040.1,5993.0,3400.9)
-        close_price = st.sidebar.slider('Цена закрытия', 2041.1,5996.0,3450.9)
-        v_volume = st.sidebar.slider('Объем продаж', 0,4296341,1845000)
-
-        data = {'open_price': open_price,
-                'max_price': max_price,
-                'min_price': min_price,
-                'close_price': close_price,
-                'v_volume': v_volume}
-        features = pd.DataFrame(data, index=[0])
-        return features
-    input_df = user_input_features()
+#         data = {'open_price': open_price,
+#                 'max_price': max_price,
+#                 'min_price': min_price,
+#                 'close_price': close_price,
+#                 'v_volume': v_volume}
+#         features = pd.DataFrame(data, index=[0])
+#         return features
+#     input_df = user_input_features()
 
 # Соединяем наши фичи с имеющимся датасетом
 # This will be useful for the encoding phase
@@ -93,20 +77,24 @@ else:
 # # data = concat_data
 # data = pd.concat([input_df,concat_data],axis=0, ignore_index=True)
 
+input_df = pd.read_csv('concat_data.csv', index_col=0)
 data = input_df
+# data.head(8)
 # -------------------------Смотрим датафрейм-------------------------
 st.header('Блок 1: работа с данными')
+st.dataframe(data.head(8)) # 
+# st.write(sinput_df.head(10))
+st.write("Весь размер таблицы: строк:", data.shape[0], "столбцов: ", data.shape[1])
 
-flag_df = False
-if st.button('Посмотрим полученный dataframe'):
-    flag_df = True
-else:
-    pass
-
-if flag_df == True:   
-    st.dataframe(data.head(10)) 
-    # st.write(sinput_df.head(10))
-    st.write("Весь размер таблицы: строк:", data.shape[0], "столбцов: ", data.shape[1])
+expander_bar = st.expander('Информация о датасете')
+expander_bar.warning('''Как мы видим, у нас есть данные о 481872 наблюдениях за ценами акций Лукоил. Данные распределены по 5ти колонкам:
+\nOPEN - цена на открытие торгов, 
+\nMAX - максимальная цена, 
+\nMIN - минимальная цена, 
+\nCLOSE - цена закрытия торгов, 
+\nVOLUME - это количество “проторгованных” акций до текущего момента.
+'''
+)
 
 data = np.array(input_df)
 
@@ -118,7 +106,8 @@ if st.button('Визуализируем данные на графиках'):
 else:
     pass
     # data = input_df
-if flag_viz == True:     
+if flag_viz == True: 
+    st.caption('''Перед вами 5 графиков, по каждой из колонок датафрейма:''')    
     #Отображаем исходные от точки start и длинной step
     start = 0            #С какой точки начинаем
     step = data.shape[0] #Сколько точек отрисуем
@@ -218,9 +207,12 @@ else:
     yVal = np.array(yVal)
 
 if st.button('Создаём генератор данных'):
-    st.caption('Сейчас мы: \nразделили данные на тренировочную (Train) и тестовую (Test) выборки, \nотмасштабировали данные с помощью MinMaxScaler(), \nсоздали генератор для Train и для Test')
+    st.caption('''Сейчас мы: 
+    \n1. разделили данные на тренировочную (Train) и тестовую (Test) выборки (обязательно БЕЗ shuffle, т.к. данные имеют временную упорядоченность), 
+    \n2. отмасштабировали данные с помощью MinMaxScaler() [документация](https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html), 
+    \n3. создали генератор для Train и для Test [документация](https://www.tensorflow.org/api_docs/python/tf/keras/preprocessing/sequence/TimeseriesGenerator).''')
     st.write(f'''
-    Таким образом получились np.array: 
+    **Таким образом получились np.array:** 
     \n xTrain: 
     \n {xTrain}, \n размером {xTrain.shape}, 
     \n yTrain: 
@@ -228,7 +220,8 @@ if st.button('Создаём генератор данных'):
     \n xTest: 
     \n {xTest}, \n размером {xTest.shape}
     \n yTest: 
-    \n {yTest} \n размером {yTest.shape}   
+    \n {yTest} \n размером {yTest.shape} 
+    \n **...которые мы будем исползовать для обучения модели (Train) и для проверки качества обучения (Test).**  
         ''')
 
 #--------------------Функции для визуализации--------------------
@@ -318,18 +311,14 @@ def showCorr(channels, corrSteps, predVal, yValUnscaled):
 #-------------------------Загрузить уже обученную модель-------------------------
 st.header('Блок 2: загрузить уже обученную модель')
 expander_bar = st.expander("Какую модель загружаем и почему?")
-expander_bar.markdown('''
+expander_bar.success('''
 В связи с тем, что обучение моделей - долгий процесс, 
-в этом блоке мы будем **не обучать заново**, а **загружать уже обученную модель**. 
-\nДля её обучения был взят исходный датасет и генератора данных из Блока 1.
+в этом блоке мы будем **не обучать новую модель**, а **загружать уже обученную модель** *model_20_ep.h5*. 
+\nДля её обучения был взят исходный датасет и генератор данных из Блока 1.
 \nОбучение длилось 20 эпох.
 \nПолный процесс создания нейросети "с нуля" разобран в Блоке 3.
 '''
 )
-# uploaded_model = st.file_uploader("Выбрать модель для загрузки")
-# посмотреть, что в uploaded_model: UploadedFile(id=4, name='model_20_ep.h5', type='application/octet-stream', size=577928)
-# писать путь, а не загружать?
-# if uploaded_model is not None:
 model_upload = keras.models.load_model('model_20_ep.h5')
 
 
@@ -342,7 +331,9 @@ if st.button('Выводим результаты'):
 
 #-------------------------Прогнозируем данные загруженной сетью-------------------------
 if st.button('Прогноз загруженной моделью'):
-    currModel = model_upload #Выбираем текущую модель
+    st.caption('''Перед вами график реальных цен акций и цен, предсказанных моделью:
+    ''')
+    currModel = model_upload #Выбираем загруженную модель
     (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
 
     #Отображаем графики
@@ -350,7 +341,11 @@ if st.button('Прогноз загруженной моделью'):
 
 #-------------------------Создадим полносвязанную нейронную сеть-------------------------
 st.header('Блок 3: создать нейронную сеть "с нуля"')
-
+expander_bar = st.expander('Немного о создании модели')
+expander_bar.info('''Для создания модели воспользуемся фреймворком **keras**.
+\nМодель будем задавать через класс Sequential(), добавляя слои [документация](https://keras.io/api/models/sequential/). 
+\nДалее модель компилируем, указывая loss-функцию (mse) и optimizer (Adam) [документация](https://keras.io/api/losses/#:~:text=categorical_hinge%20function-,Usage%20of%20losses%20with%20compile()%20%26%20fit(),-A%20loss%20function).
+''')
 modelD = Sequential()
 modelD.add(Dense(150,input_shape = (xLen,5), activation="linear" )) # 5 - количество каналов
 modelD.add(Flatten())
@@ -360,21 +355,41 @@ modelD.compile(loss="mse", optimizer=Adam(lr=1e-4))
 modelD.summary()
 
 if st.button('Создадим полносвязанную нейронную сеть'):
-    st.write('!!! Необходимо вставить сюда modelD.summary() !!!')
+  st.code('''
+  # создаём сеть через класс Sequential:
+  modelD = Sequential()
+  modelD.add(Dense(150,input_shape = (xLen,5), activation="linear" )) # 5 - количество каналов
+  modelD.add(Flatten())
+  modelD.add(Dense(1, activation="linear"))
+  # компилируем:
+  modelD.compile(loss="mse", optimizer=Adam(lr=1e-4))
+  ''')
+  tf.keras.utils.plot_model(modelD, to_file='modelD.png', show_shapes=True)
+  st.image('modelD.png', caption='Архитектура нашей нейронной сети', 
+          width=None, use_column_width=None, clamp=False, 
+          channels="RGB", output_format="auto")
 
-    
+# if st.button('прогресс бар'):
+#   my_bar = st.progress(0)
+  # for percent_complete in range(100):
+  #     time.sleep(1)
+  #     my_bar.progress(percent_complete + 1)
+
 #--------------------Запускаем обучение и визуализацию--------------------
 #--------------------Непосредственно обучение
 epchs = st.selectbox('Выберете количество эпох обучения:', (1,2,5,10,20))
 if st.button('Запускаем обучение и прогноз'):
-    st.write('!!! Необходимо вставить сюда визуализацию эпох !!!')
-    history = modelD.fit(
-                        trainDataGen, 
-                        epochs=int(epchs), 
-                        verbose=1,
-                        validation_data = testDataGen 
-                        )
-
+    with st.echo():
+      history = modelD.fit(trainDataGen, 
+                          epochs=int(epchs), 
+                          verbose=1,
+                          validation_data = testDataGen)
+    # for epch in tqdm(range(0,epchs)):
+    #   progress_bar = st.progress(0)
+    #   for percent_complete in range(100):
+    # time.sleep(0.1)
+    # progress_bar.progress(percent_complete + 1)
+    # progress_bar.progress(1.0)
     #Выводим графики обучения
     fig3 = plt.figure(figsize=(22,12), tight_layout=True)
     plt.plot(history.history['loss'], 
@@ -384,6 +399,7 @@ if st.button('Запускаем обучение и прогноз'):
     plt.ylabel('Средняя ошибка')
     plt.legend()
     st.pyplot(fig3) 
+
 
     #--------------------Выводим результаты обученной модели на Val:
     for i in range(10):
@@ -400,35 +416,4 @@ if st.button('Запускаем обучение и прогноз'):
 
 
 
-# Encoding of ordinal features
-# https://www.kaggle.com/pratik1120/penguin-dataset-eda-classification-and-clustering
-# encode = ['sex','island']
-# for col in encode:
-#     dummy = pd.get_dummies(df[col], prefix=col)
-#     df = pd.concat([df,dummy], axis=1)
-#     del df[col]
-# df = df[:1] # Selects only the first row (the user input data)
 
-# Displays the user input features
-# st.subheader('Выбранные характеристики пингвина:')
-
-# if uploaded_file is not None:
-#     st.write(df)
-# else:
-#     st.write('Подождите, пока CSV-файл загрузится. Текущие выбранные параметры представлены ниже.')
-#     st.write(df)
-
-# # Reads in saved classification model
-# load_clf = pickle.load(open('penguins_clf.pkl', 'rb'))
-
-# # Apply model to make predictions
-# prediction = load_clf.predict(df)
-# prediction_proba = load_clf.predict_proba(df)
-
-
-# st.subheader('Предсказание вида пингвина:')
-# penguins_species = np.array(['Adelie','Chinstrap','Gentoo'])
-# st.write(penguins_species[prediction])
-
-# st.subheader('Вероятность предсказания по каждому виду:')
-# st.write(prediction_proba)
