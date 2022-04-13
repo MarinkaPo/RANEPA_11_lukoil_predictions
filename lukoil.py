@@ -6,7 +6,7 @@ import numpy as np #Numpy
 #import pickle
 from PIL import Image
 #from tqdm import tqdm
-#import time
+import time
 
 import tensorflow as tf
 from tensorflow import keras
@@ -308,6 +308,9 @@ def showCorr(channels, corrSteps, predVal, yValUnscaled):
   plt.legend()
   st.pyplot(fig5) 
 
+
+
+
 #-------------------------Загрузить уже обученную модель-------------------------
 st.header('Блок 2: загрузить уже обученную модель')
 expander_bar = st.expander("Какую модель загружаем и почему?")
@@ -321,9 +324,9 @@ expander_bar.success('''
 )
 model_upload = keras.models.load_model('model_20_ep.h5')
 
-
 #-------------------------Выводим результаты-------------------------
 if st.button('Выводим результаты'):
+    st.caption(f'Перед вами реальные и предсказанные загруженной моделью цены акций:')
     for i in range(10):
         y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
         y2 = yScaler.inverse_transform(model_upload.predict(xVal[0][i].reshape(1,300,5)))
@@ -331,13 +334,17 @@ if st.button('Выводим результаты'):
 
 #-------------------------Прогнозируем данные загруженной сетью-------------------------
 if st.button('Прогноз загруженной моделью'):
-    st.caption('''Перед вами график реальных цен акций и цен, предсказанных моделью:
+    st.caption('''Перед вами график реальных цен (оранжевый) акций и цен, предсказанных моделью (синий):
     ''')
     currModel = model_upload #Выбираем загруженную модель
     (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
 
     #Отображаем графики
     showPredict(0, 160, 0, predVal, yValUnscaled)
+
+
+
+
 
 #-------------------------Создадим полносвязанную нейронную сеть-------------------------
 st.header('Блок 3: создать нейронную сеть "с нуля"')
@@ -376,38 +383,40 @@ if st.button('Создадим полносвязанную нейронную �
   #     my_bar.progress(percent_complete + 1)
 
 #--------------------Запускаем обучение и визуализацию--------------------
-#--------------------Непосредственно обучение
 epchs = st.selectbox('Выберете количество эпох обучения:', (1,2,5,10,20))
 if st.button('Запускаем обучение и прогноз'):
-    with st.echo():
-      history = modelD.fit(trainDataGen, 
-                          epochs=int(epchs), 
-                          verbose=1,
-                          validation_data = testDataGen)
+    st.code(f'''
+    history = modelD.fit(trainDataGen,
+                    epochs={epchs},
+                    verbose=1,
+                    validation_data = testDataGen)''')
+    my_bar = st.progress(0)
+    for percent_complete in range(100):
+        time.sleep(0.5)
+        my_bar.progress(percent_complete + 1)
+
+    model_new = keras.models.load_model(f'model_{epchs}_ep.h5')
+    # model_new = modelD.load_weights(f'model_{epchs}_ep_weights.h5')
+
+    st.image(f'model_{epchs}_ep_loss.png', caption='График loss-функци во время обучения', 
+          width=None, use_column_width=True, clamp=False, 
+          channels="RGB", output_format="auto")
     
-    #Выводим графики обучения
-    fig3 = plt.figure(figsize=(22,12), tight_layout=True)
-    plt.plot(history.history['loss'], 
-            label='Средняя абсолютная ошибка на обучающем наборе')
-    plt.plot(history.history['val_loss'], 
-            label='Средняя абсолютная ошибка на проверочном наборе')
-    plt.ylabel('Средняя ошибка')
-    plt.legend()
-    st.pyplot(fig3) 
-
-
-    #--------------------Выводим результаты обученной модели на Val:
+    st.caption(f'Перед вами реальные и предсказанные моделью цены акций (после {epchs} эпох обучения):')
     for i in range(10):
         y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
-        y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
+        y2 = yScaler.inverse_transform(model_new.predict(xVal[0][i].reshape(1,300,5)))
         st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
-
-
-    #if st.button('Прогноз обученной моделью'):
-    currModel = modelD #Выбираем текущую модель
+    
+    # if st.button('Прогноз загруженной моделью'):
+    st.caption(f'Перед вами график реальных цен акций (оранжевый) и цен, предсказанных моделью после {epchs} эпох обучения (синий):')
+    currModel = model_new #Выбираем загруженную модель
     (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
+
     #Отображаем графики
     showPredict(0, 160, 0, predVal, yValUnscaled)
+
+
 
 
 
