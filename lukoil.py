@@ -378,36 +378,36 @@ if st.button('Создадим полносвязанную нейронную �
 #--------------------Запускаем обучение и визуализацию--------------------
 #--------------------Непосредственно обучение
 epchs = st.selectbox('Выберете количество эпох обучения:', (1,2,5,10,20))
-# if st.button('Запускаем обучение и прогноз'):
-#     with st.echo():
-#       history = modelD.fit(trainDataGen, 
-#                           epochs=int(epchs), 
-#                           verbose=1,
-#                           validation_data = testDataGen)
+if st.button('Запускаем обучение и прогноз'):
+    with st.echo():
+      history = modelD.fit(trainDataGen, 
+                          epochs=int(epchs), 
+                          verbose=1,
+                          validation_data = testDataGen)
     
-#     #Выводим графики обучения
-#     fig3 = plt.figure(figsize=(22,12), tight_layout=True)
-#     plt.plot(history.history['loss'], 
-#             label='Средняя абсолютная ошибка на обучающем наборе')
-#     plt.plot(history.history['val_loss'], 
-#             label='Средняя абсолютная ошибка на проверочном наборе')
-#     plt.ylabel('Средняя ошибка')
-#     plt.legend()
-#     st.pyplot(fig3) 
+    #Выводим графики обучения
+    fig3 = plt.figure(figsize=(22,12), tight_layout=True)
+    plt.plot(history.history['loss'], 
+            label='Средняя абсолютная ошибка на обучающем наборе')
+    plt.plot(history.history['val_loss'], 
+            label='Средняя абсолютная ошибка на проверочном наборе')
+    plt.ylabel('Средняя ошибка')
+    plt.legend()
+    st.pyplot(fig3) 
 
 
-#     #--------------------Выводим результаты обученной модели на Val:
-#     for i in range(10):
-#         y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
-#         y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
-#         st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
+    #--------------------Выводим результаты обученной модели на Val:
+    for i in range(10):
+        y1 = yScaler.inverse_transform(yVal[0][i].reshape(-1,1))
+        y2 = yScaler.inverse_transform(modelD.predict(xVal[0][i].reshape(1,300,5)))
+        st.write('Реальное: ', y1[0][0],'     ', 'Предсказанное', y2[0][0])
 
 
-#     #if st.button('Прогноз обученной моделью'):
-#     currModel = modelD #Выбираем текущую модель
-#     (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
-#     #Отображаем графики
-#     showPredict(0, 160, 0, predVal, yValUnscaled)
+    #if st.button('Прогноз обученной моделью'):
+    currModel = modelD #Выбираем текущую модель
+    (predVal, yValUnscaled) = getPred(currModel, xVal[0], yVal[0], yScaler) #Прогнозируем данные
+    #Отображаем графики
+    showPredict(0, 160, 0, predVal, yValUnscaled)
 
 
 
