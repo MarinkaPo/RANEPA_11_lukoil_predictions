@@ -24,7 +24,7 @@ from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator # для
 st.markdown('''<h1 style='text-align: center; color: red;'
             >Lukoil stock price prediction</h1>''', 
             unsafe_allow_html=True)
-img = Image.open('1_RANEPA.jpg')
+img = Image.open('2_RANEPA.png') #1_RANEPA.jpg or 2_RANEPA.png
 st.image(img, use_column_width='auto') #width=400
 
 st.write("""
