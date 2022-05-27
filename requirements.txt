@@ -1,9 +1,10 @@
-streamlit==1.8.1 # ok
+streamlit==1.9.0. # 1.5.1 устарела
 pandas==1.3.5 # 1.4.1 
 matplotlib==3.4.3 # ok
 numpy==1.19.5 # 1.20
 base58==2.1.1
 click==8
+protobuf~=3.19.0 # без этого не работает из-за обновления protobuf в гугле
 
 #pillow==8.4.0
 scikit-learn==1.0.1
